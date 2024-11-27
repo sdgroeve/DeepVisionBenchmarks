@@ -3,14 +3,48 @@ dataset:
   data_dir: "data/dermmnist"
   batch_size: 32
   num_workers: 4
-  image_size: 224  # Updated to match ViT's expected input size
+  image_size: 224  # Most models expect 224x224 input size
 
 # Model configurations to benchmark
+# To use a different model:
+# 1. Replace the 'name' with any HuggingFace vision model identifier
+# 2. Ensure image_size matches model's requirements
+# 3. Adjust learning_rate and weight_decay if needed
+#
+# Example model configurations:
+#
+# Vision Transformer (ViT) variants:
+# - "google/vit-base-patch16-224"      # Base ViT model (recommended)
+# - "google/vit-large-patch16-224"     # Larger ViT model
+# - "google/vit-huge-patch14-224"      # Huge ViT model
+#
+# Swin Transformer variants:
+# - "microsoft/swin-tiny-patch4-window7-224"   # Tiny Swin
+# - "microsoft/swin-base-patch4-window7-224"   # Base Swin
+# - "microsoft/swin-large-patch4-window7-224"  # Large Swin
+#
+# DeiT variants:
+# - "facebook/deit-base-patch16-224"   # Base DeiT
+# - "facebook/deit-small-patch16-224"  # Small DeiT
+#
+# ConvNeXT variants:
+# - "facebook/convnext-tiny-224"       # Tiny ConvNeXT
+# - "facebook/convnext-base-224"       # Base ConvNeXT
+#
+# BEiT variants:
+# - "microsoft/beit-base-patch16-224"  # Base BEiT
+# - "microsoft/beit-large-patch16-224" # Large BEiT
 models:
-  - name: "google/vit-base-patch16-224"
-    num_classes: 7  # DermMNIST has 7 classes
-    learning_rate: 0.0001
-    weight_decay: 0.01
+  - name: "google/vit-base-patch16-224"  # Current model
+    num_classes: 7                        # DermMNIST has 7 classes
+    learning_rate: 0.0001                 # Recommended for fine-tuning
+    weight_decay: 0.01                    # Helps prevent overfitting
+
+  # Example of adding another model to benchmark
+  # - name: "microsoft/swin-tiny-patch4-window7-224"
+  #   num_classes: 7
+  #   learning_rate: 0.0001
+  #   weight_decay: 0.01
 
 # Training configuration
 training:
@@ -18,7 +52,7 @@ training:
   accelerator: "gpu"
   devices: 1
   strategy: "auto"
-  precision: 32
+  precision: 32  # Use 16 for faster training if your GPU supports it
 
 # Logging configuration
 logging:
