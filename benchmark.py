@@ -7,15 +7,15 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 
-from src.data.pcam_dataset import PCAMDataModule
 from src.models.model_factory import create_model
+from src.data.dermmnist_datamodule import DermMNISTDataModule
 
 def load_config(config_path: str) -> dict:
     """Load configuration from YAML file."""
     with open(config_path, 'r') as f:
         return yaml.safe_load(f)
 
-def benchmark_model(model_config: dict, data_module: PCAMDataModule, training_config: dict, logging_config: dict):
+def benchmark_model(model_config: dict, data_module: DermMNISTDataModule, training_config: dict, logging_config: dict):
     """Benchmark a single model configuration."""
     # Create model
     model = create_model(model_config)
@@ -60,7 +60,7 @@ def benchmark_model(model_config: dict, data_module: PCAMDataModule, training_co
     trainer.test(model, data_module)
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark image classification models on PCAM dataset")
+    parser = argparse.ArgumentParser(description="Benchmark image classification models on DermMNIST dataset")
     parser.add_argument("--config", type=str, default="configs/config.yaml", help="Path to configuration file")
     args = parser.parse_args()
     
@@ -68,7 +68,7 @@ def main():
     config = load_config(args.config)
     
     # Create data module
-    data_module = PCAMDataModule(**config["dataset"])
+    data_module = DermMNISTDataModule(**config["dataset"])
     
     # Benchmark each model
     for model_config in config["models"]:

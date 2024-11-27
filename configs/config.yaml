@@ -1,27 +1,27 @@
 # Dataset configuration
 dataset:
-  data_dir: "data/pcam"
+  data_dir: "data/dermmnist"
   batch_size: 32
   num_workers: 4
-  image_size: 96
+  image_size: 224  # Updated to match ViT's expected input size
 
 # Model configurations to benchmark
 models:
   - name: "google/vit-base-patch16-224"
-    num_classes: 2
+    num_classes: 7  # DermMNIST has 7 classes
     learning_rate: 0.0001
     weight_decay: 0.01
 
 # Training configuration
 training:
   max_epochs: 10
-  accelerator: "cpu"  # Changed to CPU since no GPU is available
+  accelerator: "gpu"
   devices: 1
-  strategy: "auto"  # Set strategy to auto
+  strategy: "auto"
   precision: 32
 
 # Logging configuration
 logging:
-  project_name: "pcam-benchmark"
+  project_name: "dermmnist-benchmark"
   save_dir: "logs"
   log_every_n_steps: 50
