@@ -2,6 +2,7 @@ import os
 import yaml
 import argparse
 from pathlib import Path
+import torch
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
@@ -14,6 +15,21 @@ def load_config(config_path: str) -> dict:
     """Load configuration from YAML file."""
     with open(config_path, 'r') as f:
         return yaml.safe_load(f)
+
+def check_gpu():
+    """Check GPU availability and display information."""
+    print("\nChecking GPU availability...")
+    if torch.cuda.is_available():
+        gpu_count = torch.cuda.device_count()
+        print(f"Found {gpu_count} GPU(s):")
+        for i in range(gpu_count):
+            print(f"  GPU {i}: {torch.cuda.get_device_name(i)}")
+        print(f"CUDA Version: {torch.version.cuda}")
+        return True
+    else:
+        print("WARNING: No GPU detected! Training will be significantly slower on CPU.")
+        print("Consider using a machine with a CUDA-capable GPU for faster training.")
+        return False
 
 def benchmark_model(model_config: dict, data_module: DermMNISTDataModule, training_config: dict, logging_config: dict):
     """Benchmark a single model configuration."""
@@ -64,8 +80,17 @@ def main():
     parser.add_argument("--config", type=str, default="configs/config.yaml", help="Path to configuration file")
     args = parser.parse_args()
     
+    # Check GPU availability
+    has_gpu = check_gpu()
+    
     # Load configuration
     config = load_config(args.config)
+    
+    # Adjust configuration if no GPU is available
+    if not has_gpu and config["training"]["accelerator"] == "gpu":
+        print("\nAdjusting configuration to use CPU instead of GPU...")
+        config["training"]["accelerator"] = "cpu"
+        config["training"]["devices"] = None
     
     # Create data module
     data_module = DermMNISTDataModule(**config["dataset"])
