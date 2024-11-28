@@ -58,13 +58,14 @@ def create_data_module(config: dict):
         # Create HuggingFace dataset module
         return HuggingFaceDataModule(
             dataset_name=config["dataset"]["name"],
+            model_name=config["models"][0]["name"],  # Use first model's name
             batch_size=config["dataset"]["batch_size"],
             num_workers=config["dataset"]["num_workers"],
-            image_size=config["dataset"]["image_size"],
             image_key=config["dataset"].get("image_key", "image"),
             label_key=config["dataset"].get("label_key", "label"),
             mean=config["dataset"].get("mean", (0.485, 0.456, 0.406)),
-            std=config["dataset"].get("std", (0.229, 0.224, 0.225))
+            std=config["dataset"].get("std", (0.229, 0.224, 0.225)),
+            num_channels=config["dataset"].get("num_channels", 3)
         )
     elif dataset_type == "dermmnist":
         # Create DermMNIST dataset module

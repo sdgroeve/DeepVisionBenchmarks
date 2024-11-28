@@ -9,6 +9,19 @@ This project implements a flexible deep learning pipeline that can work with:
 - Any dataset from HuggingFace's datasets hub
 - Local custom datasets through custom DataModules
 
+## Setup
+
+1. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
 ## Dataset Support
 
 ### 1. HuggingFace Datasets
@@ -118,19 +131,6 @@ dataset:
   image_size: 224
 ```
 
-## Setup
-
-1. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
 ## Usage
 
 1. Configure your dataset and model in `configs/config.yaml`
@@ -152,6 +152,7 @@ The script will:
 - Use dataset-specific normalization values when available
 - Consider dataset size when setting batch size
 - Use streaming for large datasets
+- Some datasets might require authentication - use `huggingface-cli login`
 
 ### Local Datasets
 - Follow the DermMNIST example for custom implementations
@@ -173,10 +174,20 @@ Key dependencies:
 - Transformers (HuggingFace)
 - Datasets (HuggingFace)
 - torchvision
-- Weights & Biases
+- Weights & Bibes
 - scikit-learn
 
 For a complete list of dependencies, see `requirements.txt`.
+
+## Troubleshooting
+
+1. ModuleNotFoundError: No module named 'datasets'
+   - Solution: Reinstall requirements with `pip install --upgrade -r requirements.txt`
+
+2. Dataset access issues:
+   - Some datasets might require authentication
+   - Run `huggingface-cli login` and follow the prompts
+   - Visit [HuggingFace](https://huggingface.co/) to create an account if needed
 
 ## License
 

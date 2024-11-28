@@ -9,6 +9,7 @@ charset-normalizer==3.4.0
 click==8.1.7
 contourpy==1.3.1
 cycler==0.12.1
+datasets==2.18.0  # Added for HuggingFace dataset support
 docker-pycreds==0.4.0
 filelock==3.16.1
 fonttools==4.55.0
