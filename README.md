@@ -1,140 +1,121 @@
-# DeepVision: Flexible Medical Image Classification Framework
+# DeepVision: Flexible Vision Model Training Framework
 
-A PyTorch Lightning-based framework for training and evaluating various deep learning models on medical image datasets. The framework is designed to be both model-agnostic and dataset-agnostic, allowing easy experimentation with different architectures and datasets.
+A PyTorch Lightning-based framework for training and evaluating various deep learning models on image classification tasks. The framework supports both HuggingFace datasets and custom local datasets.
 
 ## Project Overview
 
 This project implements a flexible deep learning pipeline that can work with:
 - Any image classification model from HuggingFace
-- Any image dataset through custom DataModules
-- Currently configured for DermaMNIST as an example
-
-## Model Support
-
-The framework supports a wide range of model architectures from HuggingFace, including but not limited to:
-
-- Vision Transformers (ViT)
-- Swin Transformers
-- DeiT (Data-efficient Image Transformers)
-- ConvNeXT
-- BEiT
+- Any dataset from HuggingFace's datasets hub
+- Local custom datasets through custom DataModules
 
 ## Dataset Support
 
-The framework can be easily adapted to work with different datasets:
+### 1. HuggingFace Datasets
+Directly load and use any dataset from HuggingFace's hub:
 
-1. Built-in support for:
-   - Medical image datasets (e.g., DermaMNIST)
-   - Standard vision datasets (e.g., ImageNet-style)
-   - Custom datasets
+```yaml
+# configs/config.yaml
+dataset:
+  type: "huggingface"
+  name: "imagenet-1k"  # or any other dataset from HuggingFace
+  batch_size: 32
+  num_workers: 4
+  image_size: 224
+  image_key: "image"
+  label_key: "label"
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+```
 
-2. Dataset requirements:
-   - Image data in any common format
-   - Classification labels
-   - Train/validation/test splits (can be created automatically)
+Popular HuggingFace datasets:
+- `imagenet-1k`: Full ImageNet dataset
+- `cifar10`: CIFAR-10 dataset
+- `mnist`: MNIST dataset
+- `fashion_mnist`: Fashion-MNIST dataset
+
+### 2. Local Datasets
+Use custom local datasets like DermMNIST:
+
+```yaml
+dataset:
+  type: "dermmnist"
+  data_dir: "data/dermmnist"
+  batch_size: 32
+  num_workers: 4
+  image_size: 224
+```
+
+## Model Support
+
+The framework supports various model architectures from HuggingFace:
+
+```yaml
+models:
+  - name: "google/vit-base-patch16-224"
+    num_classes: 1000  # Adjust based on dataset
+    learning_rate: 0.0001
+    weight_decay: 0.01
+```
 
 ## Project Structure
 
 ```
 deeplearning_ViT_PCAM/
 ├── src/
-│   ├── data/              # Dataset modules
-│   │   └── dermmnist_datamodule.py
-│   ├── models/           # Model implementations
+│   ├── data/              
+│   │   ├── dermmnist_datamodule.py
+│   │   └── huggingface_datamodule.py
+│   ├── models/           
 │   │   └── model_factory.py
-│   └── utils/            # Utility functions
+│   └── utils/            
 │       └── metrics.py
-├── configs/              # Configuration files
+├── configs/              
 │   └── config.yaml
-├── data/                 # Dataset storage
-├── logs/                 # Training logs
-├── results/              # Evaluation results
-├── benchmark.py          # Main training script
-├── requirements.txt      # Dependencies
-└── README.md            # Documentation
+├── data/                 
+├── logs/                 
+├── results/              
+├── benchmark.py          
+├── requirements.txt      
+└── README.md            
 ```
 
 ## Dataset Configuration
 
-To use a different dataset:
+### Using HuggingFace Datasets
 
-1. Create a new DataModule:
-```python
-# src/data/your_dataset_module.py
-class YourDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir, batch_size=32, num_workers=4, image_size=224):
-        super().__init__()
-        self.data_dir = data_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.image_size = image_size
-        
-        # Define your transforms
-        self.transform = transforms.Compose([
-            transforms.Resize((image_size, image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[...], std=[...])
-        ])
-
-    def setup(self, stage=None):
-        # Load your dataset
-        self.train_dataset = YourDataset(...)
-        self.val_dataset = YourDataset(...)
-        self.test_dataset = YourDataset(...)
-```
-
-2. Update config.yaml:
+1. Choose a dataset from [HuggingFace Datasets](https://huggingface.co/datasets):
 ```yaml
 dataset:
-  data_dir: "data/your_dataset"
-  batch_size: 32
-  num_workers: 4
-  image_size: 224
-  mean: [0.485, 0.456, 0.406]  # Update with your dataset's values
-  std: [0.229, 0.224, 0.225]   # Update with your dataset's values
+  type: "huggingface"
+  name: "imagenet-1k"  # Replace with your chosen dataset
 ```
 
-Example configurations for different datasets:
-
+2. Configure dataset parameters:
 ```yaml
-# ImageNet-style dataset
 dataset:
-  data_dir: "data/imagenet"
-  batch_size: 32
-  num_workers: 4
-  image_size: 224
-  mean: [0.485, 0.456, 0.406]
-  std: [0.229, 0.224, 0.225]
-
-# CIFAR-style dataset
-dataset:
-  data_dir: "data/cifar"
+  type: "huggingface"
+  name: "cifar10"
   batch_size: 128
   num_workers: 4
   image_size: 224
-  mean: [0.4914, 0.4822, 0.4465]
+  image_key: "img"      # Check dataset documentation for correct keys
+  label_key: "label"
+  mean: [0.4914, 0.4822, 0.4465]  # Dataset-specific values
   std: [0.2023, 0.1994, 0.2010]
-
-# Custom medical dataset
-dataset:
-  data_dir: "data/medical"
-  batch_size: 16
-  num_workers: 4
-  image_size: 224
-  mean: [0.5, 0.5, 0.5]
-  std: [0.5, 0.5, 0.5]
 ```
 
-## Model Configuration
+### Using Local Datasets
 
-To use a different model, update the config.yaml:
-
+1. Create a custom DataModule (see dermmnist_datamodule.py as example)
+2. Update configuration:
 ```yaml
-models:
-  - name: "your-chosen-model"  # HuggingFace model identifier
-    num_classes: N             # Number of classes in your dataset
-    learning_rate: 0.0001
-    weight_decay: 0.01
+dataset:
+  type: "your_dataset_type"
+  data_dir: "path/to/data"
+  batch_size: 32
+  num_workers: 4
+  image_size: 224
 ```
 
 ## Setup
@@ -150,55 +131,32 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Training Configuration
-
-The training configuration in `configs/config.yaml` includes:
-
-```yaml
-training:
-  max_epochs: 10
-  accelerator: "gpu"
-  devices: 1
-  strategy: "auto"
-  precision: 32
-
-logging:
-  project_name: "your-project-name"
-  save_dir: "logs"
-  log_every_n_steps: 50
-```
-
 ## Usage
 
-Run the training script:
+1. Configure your dataset and model in `configs/config.yaml`
+2. Run the training script:
 ```bash
 python benchmark.py
 ```
 
 The script will:
-1. Load the specified dataset
+1. Load the specified dataset (HuggingFace or local)
 2. Initialize the chosen model
 3. Train using the specified configuration
 4. Log metrics and save checkpoints
 
 ## Dataset Tips
 
-When adapting to a new dataset:
+### HuggingFace Datasets
+- Check dataset documentation for correct image/label keys
+- Use dataset-specific normalization values when available
+- Consider dataset size when setting batch size
+- Use streaming for large datasets
 
-1. Data Preparation:
-   - Ensure consistent image formats
-   - Create proper train/val/test splits
-   - Calculate dataset statistics (mean/std)
-
-2. Performance Optimization:
-   - Adjust batch size based on image size and memory
-   - Tune number of workers for data loading
-   - Consider adding dataset-specific augmentations
-
-3. Common Issues:
-   - Memory management for large datasets
-   - Handling imbalanced classes
-   - Dealing with missing or corrupt data
+### Local Datasets
+- Follow the DermMNIST example for custom implementations
+- Implement proper data loading and preprocessing
+- Handle dataset-specific requirements
 
 ## Logging
 
@@ -213,6 +171,7 @@ Training progress and results are logged using Weights & Biases (wandb). Logs in
 Key dependencies:
 - PyTorch Lightning
 - Transformers (HuggingFace)
+- Datasets (HuggingFace)
 - torchvision
 - Weights & Biases
 - scikit-learn
