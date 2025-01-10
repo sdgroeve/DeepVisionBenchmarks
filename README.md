@@ -48,8 +48,11 @@ Popular HuggingFace datasets:
 - `fashion_mnist`: Fashion-MNIST dataset
 
 ### 2. Local Datasets
-Use custom local datasets like DermMNIST:
+The framework provides a flexible base class for implementing custom local dataset loaders. You can create your own dataset module by inheriting from `LocalImageDataModule`.
 
+#### Using Existing Local Datasets
+
+Example configuration for DermMNIST:
 ```yaml
 dataset:
   type: "dermmnist"
@@ -58,6 +61,84 @@ dataset:
   num_workers: 4
   image_size: 224
 ```
+
+#### Creating Custom Dataset Modules
+
+1. Create a custom dataset class inheriting from `LocalImageDataset`:
+```python
+from src.data.local_datamodule import LocalImageDataset
+
+class CustomDataset(LocalImageDataset):
+    def _load_dataset(self):
+        # Implement your dataset loading logic
+        samples = []
+        # Example: Loading from a directory structure
+        for class_idx, class_name in enumerate(sorted(os.listdir(self.root_dir))):
+            class_dir = os.path.join(self.root_dir, class_name)
+            if not os.path.isdir(class_dir):
+                continue
+            for img_name in os.listdir(class_dir):
+                if img_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    img_path = os.path.join(class_dir, img_name)
+                    samples.append((img_path, class_idx))
+        return samples
+```
+
+2. Create a DataModule inheriting from `LocalImageDataModule`:
+```python
+from src.data.local_datamodule import LocalImageDataModule
+
+class CustomDataModule(LocalImageDataModule):
+    def __init__(self, data_dir: str, **kwargs):
+        super().__init__(
+            data_dir=data_dir,
+            **kwargs,
+            # Specify dataset-specific settings
+            mean=[0.485, 0.456, 0.406],  # Dataset mean
+            std=[0.229, 0.224, 0.225],   # Dataset std
+            num_channels=3               # Number of channels
+        )
+    
+    def _create_dataset(self, split: str):
+        return CustomDataset(
+            root_dir=self.data_dir,
+            transform=self.transform,
+            split=split
+        )
+```
+
+3. Update configuration:
+```yaml
+dataset:
+  type: "custom"  # Register your dataset type
+  data_dir: "path/to/data"
+  batch_size: 32
+  num_workers: 4
+  image_size: 224
+```
+
+See `src/data/dermmnist_datamodule.py` for a complete example implementation.
+
+#### Dataset Structure Tips
+
+1. Organize your data in a clear directory structure:
+```
+data/
+└── your_dataset/
+    ├── train/
+    │   ├── class1/
+    │   │   ├── image1.jpg
+    │   │   └── image2.jpg
+    │   └── class2/
+    ├── val/
+    └── test/
+```
+
+2. Consider dataset-specific requirements:
+   - Image formats and channels
+   - Normalization values
+   - Data augmentation needs
+   - Special handling for labels
 
 ## Model Support
 
