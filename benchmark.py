@@ -78,9 +78,52 @@ def create_data_module(config: dict):
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
 
+def add_model_args(parser):
+    """Add model-specific command line arguments."""
+    model_args = parser.add_argument_group('Model Configuration')
+    model_args.add_argument("--head-dropout", type=float, 
+                           help="Dropout rate for classification head (default: from config)")
+    model_args.add_argument("--head-hidden-sizes", type=int, nargs="+", 
+                           help="Hidden layer sizes for custom head (default: from config)")
+    model_args.add_argument("--label-smoothing", type=float, 
+                           help="Label smoothing factor 0.0-1.0 (default: from config)")
+    model_args.add_argument("--mixup-alpha", type=float, 
+                           help="Mixup alpha parameter, 0.0 to disable (default: from config)")
+    model_args.add_argument("--progressive-unfreezing", action="store_true", 
+                           help="Enable progressive layer unfreezing")
+    model_args.add_argument("--discriminative-lr", action="store_true", 
+                           help="Use different learning rates for layers")
+    model_args.add_argument("--head-lr-multiplier", type=float, 
+                           help="Learning rate multiplier for head (default: from config)")
+    model_args.add_argument("--gradient-clip-val", type=float, 
+                           help="Gradient clipping value, 0.0 to disable (default: from config)")
+    return parser
+
+def update_config_with_args(config, args):
+    """Update configuration with command line arguments."""
+    # Only update if argument is provided
+    for model in config["models"]:
+        if args.head_dropout is not None:
+            model["head_dropout"] = args.head_dropout
+        if args.head_hidden_sizes is not None:
+            model["head_hidden_sizes"] = args.head_hidden_sizes
+        if args.label_smoothing is not None:
+            model["label_smoothing"] = args.label_smoothing
+        if args.mixup_alpha is not None:
+            model["mixup_alpha"] = args.mixup_alpha
+        if args.progressive_unfreezing:
+            model["progressive_unfreezing"] = True
+        if args.discriminative_lr:
+            model["discriminative_lr"] = True
+        if args.head_lr_multiplier is not None:
+            model["head_lr_multiplier"] = args.head_lr_multiplier
+        if args.gradient_clip_val is not None:
+            model["gradient_clip_val"] = args.gradient_clip_val
+    return config
+
 def benchmark_model(model_config: dict, data_module: pl.LightningDataModule, training_config: dict, logging_config: dict):
     """Benchmark a single model configuration."""
-    # Create model
+    # Create model with advanced training features
     model = create_model(model_config)
     
     # Set up logging
@@ -106,17 +149,24 @@ def benchmark_model(model_config: dict, data_module: pl.LightningDataModule, tra
         )
     ]
     
-    # Create trainer
-    trainer = pl.Trainer(
-        max_epochs=training_config["max_epochs"],
-        accelerator=training_config["accelerator"],
-        devices=training_config["devices"],
-        strategy=training_config["strategy"],
-        precision=training_config["precision"],
-        logger=logger,
-        callbacks=callbacks,
-        log_every_n_steps=logging_config["log_every_n_steps"]
-    )
+    # Create trainer with gradient clipping if enabled
+    trainer_kwargs = {
+        "max_epochs": training_config["max_epochs"],
+        "accelerator": training_config["accelerator"],
+        "devices": training_config["devices"],
+        "strategy": training_config["strategy"],
+        "precision": training_config["precision"],
+        "logger": logger,
+        "callbacks": callbacks,
+        "log_every_n_steps": logging_config["log_every_n_steps"]
+    }
+    
+    # Add gradient clipping if specified
+    if model_config.get("gradient_clip_val", 0.0) > 0:
+        trainer_kwargs["gradient_clip_val"] = model_config["gradient_clip_val"]
+        trainer_kwargs["gradient_clip_algorithm"] = "norm"
+    
+    trainer = pl.Trainer(**trainer_kwargs)
     
     # Train and test
     trainer.fit(model, data_module)
@@ -124,8 +174,13 @@ def benchmark_model(model_config: dict, data_module: pl.LightningDataModule, tra
 
 def main():
     """Main execution function."""
-    parser = argparse.ArgumentParser(description="Benchmark vision models on various datasets")
-    parser.add_argument("--config", type=str, default="configs/config.yaml", help="Path to configuration file")
+    parser = argparse.ArgumentParser(
+        description="Benchmark vision models on various datasets",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument("--config", type=str, default="configs/config.yaml", 
+                       help="Path to configuration file")
+    parser = add_model_args(parser)
     args = parser.parse_args()
     
     # Check GPU availability
@@ -133,6 +188,9 @@ def main():
     
     # Load configuration
     config = load_config(args.config)
+    
+    # Update configuration with command line arguments
+    config = update_config_with_args(config, args)
     
     # Adjust configuration if no GPU is available
     if not has_gpu and config["training"]["accelerator"] == "gpu":
@@ -146,6 +204,20 @@ def main():
     # Benchmark each model
     for model_config in config["models"]:
         print(f"\nBenchmarking model: {model_config['name']}")
+        print("\nAdvanced training features:")
+        if model_config.get("head_hidden_sizes"):
+            print(f"- Custom head with layers: {model_config['head_hidden_sizes']}")
+        if model_config.get("progressive_unfreezing"):
+            print("- Progressive layer unfreezing enabled")
+        if model_config.get("discriminative_lr"):
+            print(f"- Discriminative learning rates (head multiplier: {model_config.get('head_lr_multiplier', 10.0)})")
+        if model_config.get("mixup_alpha", 0) > 0:
+            print(f"- Mixup augmentation (alpha: {model_config['mixup_alpha']})")
+        if model_config.get("label_smoothing", 0) > 0:
+            print(f"- Label smoothing: {model_config['label_smoothing']}")
+        if model_config.get("gradient_clip_val", 0) > 0:
+            print(f"- Gradient clipping: {model_config['gradient_clip_val']}")
+        
         benchmark_model(
             model_config=model_config,
             data_module=data_module,

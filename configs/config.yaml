@@ -48,6 +48,18 @@ models:
     learning_rate: 0.0001
     weight_decay: 0.01
     input_size: 224  # Required input size for the model
+    
+    # Advanced training features
+    head_dropout: 0.1  # Dropout rate for classification head
+    head_hidden_sizes: [1024, 512]  # Hidden layer sizes for custom head
+    label_smoothing: 0.1  # Label smoothing factor (0.0-1.0)
+    mixup_alpha: 0.2  # Mixup alpha parameter (0.0 to disable)
+    
+    # Layer freezing and learning rates
+    progressive_unfreezing: true  # Gradually unfreeze layers
+    discriminative_lr: true  # Use different learning rates for layers
+    head_lr_multiplier: 10.0  # Multiplier for head learning rate
+    gradient_clip_val: 1.0  # Gradient clipping value (0.0 to disable)
 
 # Training configuration
 training:
